@@ -1,0 +1,59 @@
+#
+# Digital Voice Modem - IPSC
+#
+# @package DVM / IPSC
+#
+
+# Time in seconds between pings to peers.
+pingTime: 5
+# Flag indicating whether or not the router should debug display all packets received.
+rawPacketTrace: false
+
+# Textual Name
+name: BRIDGE
+# Network Peer ID
+peerId: 9000100
+# Hostname/IP address of FNE master to connect to.
+address: 127.0.0.1
+# Port number to connect to.
+port: 62030
+# FNE access password.
+passphrase: RPT1234
+
+# Flag indicating whether or not FNE encryption is enabled.
+encrypted: false
+# Preshared AES key for FNE encryption.
+presharedKey: "000102030405060708090A0B0C0D0E0F000102030405060708090A0B0C0D0E0F"
+
+# Source "Radio ID" for transmitted audio frames.
+sourceId: 1234567
+# Talkgroup ID for transmitted/received audio frames.
+destinationId: 1
+# Slot for received/transmitted audio frames.
+slot: 1
+
+ipsc:
+    # 0 = MASTER, 1 = PEER
+    mode: 0
+    address: "127.0.0.1"
+    port: 50000
+
+#
+# Logging Configuration
+#   Logging Levels:
+#     1 - Debug
+#     2 - Message
+#     3 - Informational
+#     4 - Warning
+#     5 - Error
+#     6 - Fatal
+#
+log:
+    # Console display logging level (used when in foreground).
+    displayLevel: 1
+    # File logging level.
+    fileLevel: 1
+    # Full path for the directory to store the log files.
+    filePath: .
+    # Log filename prefix.
+    fileRoot: dvmbridge

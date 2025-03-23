@@ -16,7 +16,6 @@ namespace dvmipsc
         private readonly bool extension;
         private readonly byte csrcCount;
         private readonly bool marker;
-        //94 seems to be CSBK, 94 seems to be a call
         private readonly byte payloadType;
         private readonly UInt16 sequenceNumber;
         private readonly UInt32 timestamp;

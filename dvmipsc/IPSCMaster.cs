@@ -311,7 +311,10 @@ namespace dvmipsc
                 (byte)IPSCMessageType.GROUP_VOICE
             };
 
+            packet.AddRange(new List<byte> { 0x00, 0x00, 0x00, 0x0E });
             packet.AddRange(data);
+
+            Console.WriteLine(FneUtils.HexDump(packet.ToArray()));
 
             _udpServer.Send(packet.ToArray(), packet.Count, _masterEndPoint);
         }

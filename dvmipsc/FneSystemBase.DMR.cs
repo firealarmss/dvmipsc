@@ -16,14 +16,17 @@ using fnecore;
 using fnecore.DMR;
 using Serilog;
 using vocoder;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using static dvmipsc.IPSCConstants;
 
 namespace dvmipsc
 {
     public abstract partial class FneSystemBase : fnecore.FneSystemBase
     {
+        private const int AMBE_BUF_LEN = 9;
         private const int DMR_AMBE_LENGTH_BYTES = 27;
         private const int DMR_SHORT_AMBE_LENGTH_BYTES = 21;
+        private const int AMBE_PER_SLOT = 3;
 
         private EmbeddedData embeddedData;
 
@@ -285,11 +288,104 @@ namespace dvmipsc
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="ambeFrames"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static byte[] PackAmbeFrames(byte[][] ambeFrames)
+        {
+            if (ambeFrames.Length != 3)
+                throw new ArgumentException("Expected exactly 3 AMBE49 frames");
+
+            byte[] result = new byte[19];
+            int bytePos = 0;
+            int bitOffset = 0;
+
+            foreach (var frame in ambeFrames)
+            {
+                if (frame.Length != 7)
+                    throw new ArgumentException("Each AMBE49 frame must be 7 bytes");
+
+                frame[6] &= 0x80;
+
+                for (int i = 0; i < 7; i++)
+                {
+                    byte b = frame[i];
+
+                    if (bitOffset > 0)
+                    {
+                        result[bytePos] |= (byte)(b >> bitOffset);
+
+                        if (i < 6)
+                        {
+                            result[bytePos + 1] = (byte)(b << (8 - bitOffset));
+                        }
+                    }
+                    else
+                    {
+                        result[bytePos] = b;
+                    }
+
+                    bytePos++;
+                }
+
+                bitOffset += 2;
+                bytePos--;
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="data"></param>
         /// <param name="e"></param>
-        private void DMRDecodeAudioFrame(byte[] data, DMRDataReceivedEvent e)
+        private void DMRDecodeAudioFrame(byte[] ambe, DMRDataReceivedEvent e)
         {
-            // Console.WriteLine(FneUtils.HexDump(data));
+            List<byte[]> frameList = new List<byte[]>(3);
+
+            for (int n = 0; n < AMBE_PER_SLOT; n++)
+            {
+                byte[] ambePartial = new byte[AMBE_BUF_LEN];
+                byte[] uninterleaved = new byte[7];
+
+                for (int i = 0; i < AMBE_BUF_LEN; i++)
+                    ambePartial[i] = ambe[i + (n * 9)];
+
+                byte[] bits = new byte[49];
+
+                MBEInterleaver interleaver = new MBEInterleaver(MBEMode.DMRAMBE);
+                interleaver.decode(ambePartial, out bits);
+                packBitsToBytes(bits, out uninterleaved, 7, 49);
+
+                Console.WriteLine($"AMBE Frame {n + 1}: {BitConverter.ToString(uninterleaved).Replace("-", " ")}");
+
+                frameList.Add(uninterleaved);
+
+                if (frameList.Count == 3)
+                {
+                    byte[] ipscFrame = new byte[51];
+                    byte[] packed = PackAmbeFrames(frameList.ToArray());
+                    byte[] rtpData = new byte[12];
+
+                    RTPData rtp = new RTPData(0x5d);
+
+                    rtpData = rtp.Encode();
+
+                    FneUtils.Write3Bytes(e.SrcId, ref ipscFrame, 1);
+                    FneUtils.Write3Bytes(e.DstId, ref ipscFrame, 4);
+
+                    Array.Copy(rtpData, 0, ipscFrame, 13, 12);
+                    ipscFrame[27] = 0x06;
+                    ipscFrame[26] = 0x19;
+                    Array.Copy(packed, 0, ipscFrame, 28, packed.Length);
+
+                    ipscMaster.SendGroupVoice(ipscFrame);
+
+                    frameList.Clear();
+                }
+            }
         }
 
         /// <summary>
@@ -320,20 +416,6 @@ namespace dvmipsc
 
                 bytePtr++;
             }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="in72"></param>
-        /// <param name="out49"></param>
-        private void to49(byte[] in72, out byte[] out49)
-        {
-            byte[] bits49 = new byte[49];
-
-            AMBEUtils.ProcessAmbe72(in72, out bits49);
-
-            packBitsToBytes(bits49, out out49, 7, 49);
         }
 
         /// <summary>

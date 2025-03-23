@@ -89,7 +89,7 @@ namespace dvmipsc
                     break;
 
                 case IPSCMessageType.XCMP_XNL:
-                    HandleXnl(peerId, sender, data);
+                    //HandleXnl(peerId, sender, data);
                     break;
 
                 default:
@@ -125,71 +125,12 @@ namespace dvmipsc
 
             Log.Logger.Information($"(IPSC) XNL/XCMP message received");
 
-            XNLMessageTypes xnlmessageTypes = (XNLMessageTypes)ReadInt16(xnl, 2);
-            Log.Logger.Information($"(IPSC) XNL Message: {xnlmessageTypes}");
-
-            switch (xnlmessageTypes)
-            {
-                case XNLMessageTypes.XNL_DEVICE_MASTER_QUERY:
-                    //Log.Logger.Debug(FneUtils.HexDump(data));
-                    byte[] response = { 0x70, 00, 00, 00, 0x0e, 00, 0x13, 00, 0x02, 00, 00, 00, 00, 00, 0x06, 00, 00, 00, 0x07, 00, 00, 00, 0x01, 0x01, 0x01, 0x01 };
-                    Console.WriteLine(FneUtils.HexDump(response));
-                    _udpServer.Send(response, response.Length, sender);
-                    break;
-
-                case XNLMessageTypes.XNL_DEVICE_AUTH_KEY_REQUEST:
-                    byte[] response2 = { 0x70, 00, 00, 00, 0x0e, 00, 0x16, 00, 0x05, 00, 00, 00, 00, 00, 0x06, 00, 00, 00, 0x0a, 0xff, 0xfe, 20, 0x7f, 0x46, 0xb6, 0x6c, 0x71, 0x04, 0xab };
-                    Console.WriteLine(FneUtils.HexDump(response2));
-                    _udpServer.Send(response2, response2.Length, sender);
-                    break;
-
-                case XNLMessageTypes.XNL_DEVICE_CONN_REQUEST:
-                    byte[] response3 = { 0x70, 00, 00, 00, 0x0e, 00, 0x1a, 00, 0x07, 00, 00, 0xff, 0xfe, 00, 0x06, 00, 00, 00, 0x0e, 0x01, 0x03, 00, 0x01, 0x0a, 0x01, 0xdf, 0x7d, 0xc3, 0x8e, 0xce, 0x3a, 0x8a, 0xb2 };
-                    _udpServer.Send(response3, response3.Length, sender);
-
-                    byte[] response4 = { 0x70, 00, 00, 00, 0x0e, 00, 0x1d, 00, 0x09, 00, 00, 00, 00, 00, 0x06, 00, 00, 00, 0x11, 00, 0x03, 0x01, 0x01, 00, 0x06, 00, 0x01, 0x02, 00, 0x05, 00, 0x0a, 0x01, 0x00, 0x01, 0x01 };
-                    _udpServer.Send(response4, response4.Length, sender);
-
-                    byte[] response5 = { 0x70, 00, 00, 00, 0x0e, 00, 0x27, 00, 0x0b, 0x01, 00, 00, 00, 00, 0x06, 0x01, 0x02, 00, 0x1b, 0xb4, 00, 0x02, 00, 00, 0x09, 00, 0x04, 00, 00, 0x10, 00, 0x05, 0x02, 00, 0x04, 00, 0x05, 0x01, 0x07, 0x02, 0x09, 00, 0x0d, 00, 0x0e, 00 };
-                    _udpServer.Send(response5, response5.Length, sender);
-                    break;
-
-                case XNLMessageTypes.XNL_DATA_MSG:
-                    HandleXcmp(peerId, sender, data);
-                    break;
-
-                default:
-                    Log.Logger.Warning($"(IPSC) Unkown XNL opcode: {xnlmessageTypes}");
-                    break;
-            }
-
             //Console.WriteLine(FneUtils.HexDump(ExtractXnlData(data)));
         }
 
         private void HandleXcmp(string peerId, IPEndPoint sender, byte[] data)
         {
             int xcmpMessage = (int)ReadInt16(data, 14);
-
-            Console.WriteLine(FneUtils.HexDump(data));
-            //70 00 00 00 0b 00 0c 00 0c 01 00 00 01 00 06 00 00 00 00
-
-            //byte[] response4 = { 0x70, 00, 00, 00, 0x0e, 00, 0x0c, 00, 0x0c, 0x01, 00, 00, 0x01, 00, 0x06, 00, 00, 00, 00 };
-            //_udpServer.Send(response4, response4.Length, sender);
-
-            if (xcmpMessage == 256)
-            {
-                byte[] response5 = { 0x70, 00, 00, 00, 0x0e, 00, 0x13, 00, 0x0b, 0x01, 0x02, 0x00, 0x00, 0x00, 0x06, 0x01, 0x03, 00, 0x07, 0xb4, 00, 0x02, 00, 00, 0x09, 0x01 };
-                _udpServer.Send(response5, response5.Length, sender);
-            }
-
-            if (xcmpMessage == 259)
-            {
-                byte[] response6 = { 0x70, 00, 00, 00, 0x0e, 00, 0x1c, 00, 0x0b, 0x01, 0x03, 00, 0x01, 00, 0x06, 0x03, 0x01, 00, 0x10, 0x80, 0x0f, 00, 0x52, 0x30, 0x32, 0x2e, 0x30, 0x36, 0x2e, 0x30, 0x30, 0x2e, 0x30, 0x37, 00 };
-                _udpServer.Send(response6, response6.Length, sender);
-
-                byte[] response7 = { 0x70, 00, 00, 00, 0x0e, 00, 0x1c, 00, 0x0b, 0x01, 0x03, 00, 0x01, 00, 0x06, 0x03, 0x01, 00, 0x10, 0x80, 0x0f, 00, 0x52, 0x30, 0x32, 0x2e, 0x30, 0x36, 0x2e, 0x30, 0x30, 0x2e, 0x30, 0x37, 00 };
-                _udpServer.Send(response7, response6.Length, sender);
-            }
 
             Log.Logger.Information($"(IPSC) XCMP Message: {xcmpMessage}");
         }
